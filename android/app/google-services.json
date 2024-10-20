@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "411965189446",
+    "project_id": "graduation-project-443c6",
+    "storage_bucket": "graduation-project-443c6.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:411965189446:android:aacf0a82f761d4caa00947",
+        "android_client_info": {
+          "package_name": "com.example.flutter_application_2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDBS7sKUuSKKZUdHClnQ3RbMRACYhyUw18"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
