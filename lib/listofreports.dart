@@ -1,7 +1,6 @@
-// ignore_for_file: unused_local_variable, non_constant_identifier_names
-
 import 'package:flutter/material.dart';
-import 'package:flutter_application_2/ReportButton.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_application_2/ReportPage.dart';
 import 'package:flutter_application_2/pdf_creator.dart';
 
 class Listofreports extends StatelessWidget {
@@ -9,38 +8,63 @@ class Listofreports extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // الحصول على حجم الشاشة
-    final size = MediaQuery.of(context).size;
-    final height = size.height;
-    final width = size.width;
-
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: Colors.white,
         centerTitle: true,
         title: Text(
-          'Report',
-          style: TextStyle(fontSize: height * 0.03, color: Colors.blue),
-          // حجم النص بناءً على طول الشاشة
+          'Reports',
+          style: TextStyle(fontSize: 20, color: Colors.blue),
         ),
       ),
       body: Container(
-        padding: EdgeInsets.all(width * 0.05), // الحشوة بناءً على عرض الشاشة
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              SizedBox(
-                  height: height * 0.02), // مسافة فارغة بناءً على طول الشاشة
-              Reportbutton(
-                street: 'Quraish Street & Hira Street',
-                icon: Icons.description,
-                onPressed: () async {
-                  await PdfCreator.GenerateAndSavePDF(
-                      // يمكن إضافة معلومات التقرير هنا
-                      );
-                },
-              ),
-            ],
-          ),
+        padding: EdgeInsets.all(16),
+        child: StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('Trips')
+              .orderBy('TripNumber')
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator());
+            }
+            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+              return Center(child: Text("No trips found"));
+            }
+
+            final trips = snapshot.data!.docs;
+
+            return ListView.builder(
+              itemCount: trips.length,
+              itemBuilder: (context, index) {
+                final trip = trips[index];
+
+                List<String> streetNames = List<String>.from(trip['Streets']);
+
+                List<String> displayedStreets = streetNames.length >= 3
+                    ? streetNames.take(3).toList()
+                    : streetNames;
+
+                return Card(
+                  margin: EdgeInsets.symmetric(vertical: 8),
+                  child: ListTile(
+                    leading: Icon(
+                      Icons.description,
+                      size: 46,
+                      color: Colors.blue,
+                    ),
+                    title: Text(displayedStreets.join(', ')),
+                    subtitle: Text(
+                      "Date: ${trip['Date']}\nTime: ${trip['Time']}",
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                    onTap: () async {},
+                  ),
+                );
+              },
+            );
+          },
         ),
       ),
     );

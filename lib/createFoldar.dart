@@ -10,6 +10,8 @@ class Foldar extends StatelessWidget {
   const Foldar({
     required this.TripNo,
     required this.onPressed,
+    required tripDate,
+    required tripTime,
   });
 
   @override

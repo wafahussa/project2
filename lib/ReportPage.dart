@@ -1,7 +1,5 @@
-// ignore_for_file: unused_field
-
 import 'package:flutter/material.dart';
-import 'package:flutter_application_2/createFoldar.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 
 class ReportPage extends StatefulWidget {
@@ -14,9 +12,37 @@ class _ReportPageScreenState extends State<ReportPage> {
   DateTime? startDate;
   DateTime? endDate;
   final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _startDateController = TextEditingController();
+  final TextEditingController _endDateController = TextEditingController();
 
-  TextEditingController _startDateController = TextEditingController();
-  TextEditingController _endDateController = TextEditingController();
+  List<String> streetNames = [
+    'Quraish Street',
+    'Hira Street',
+    'King Fahad Road',
+    'King Abdulaziz Road',
+    'Palestine Street',
+    'Prince Sultan Road',
+    'Al Madinah Road',
+    'Sari Street',
+    'Tahlia Street',
+    'Prince Majed Road'
+  ];
+
+  int currentTripNumber = 1;
+
+  @override
+  void initState() {
+    super.initState();
+    _getLastTripNumber();
+  }
+
+  @override
+  void dispose() {
+    _startDateController.dispose();
+    _endDateController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
 
   Future<void> _selectDate(BuildContext context, bool isStartDate) async {
     final DateTime? picked = await showDatePicker(
@@ -28,9 +54,9 @@ class _ReportPageScreenState extends State<ReportPage> {
         return Theme(
           data: ThemeData.light().copyWith(
             colorScheme: ColorScheme.light(
-              primary: Colors.blue, // header background color
-              onPrimary: Colors.white, // header text color
-              onSurface: Colors.black, // body text color
+              primary: Colors.blue,
+              onPrimary: Colors.white,
+              onSurface: Colors.black,
             ),
             dialogBackgroundColor: Colors.white,
           ),
@@ -52,11 +78,62 @@ class _ReportPageScreenState extends State<ReportPage> {
     }
   }
 
-  @override
-  void dispose() {
-    _startDateController.dispose();
-    _endDateController.dispose();
-    super.dispose();
+  Future<void> _getLastTripNumber() async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('Trips')
+        .orderBy('TripNumber', descending: true)
+        .limit(1)
+        .get();
+
+    setState(() {
+      if (snapshot.docs.isNotEmpty) {
+        currentTripNumber = snapshot.docs.first['TripNumber'] + 1;
+      } else {
+        currentTripNumber = 1;
+      }
+    });
+  }
+
+  Future<void> _addSingleTripToFirestore() async {
+    try {
+      final snapshot =
+          await FirebaseFirestore.instance.collection('Trips').get();
+      if (snapshot.docs.isEmpty) {
+        setState(() {
+          currentTripNumber = 1;
+        });
+      }
+
+      String formattedDate = DateFormat('dd/MM/yyyy').format(DateTime.now());
+      String formattedTime = DateFormat('HH:mm:ss').format(DateTime.now());
+
+      final selectedStreets =
+          (streetNames.toList()..shuffle()).take(3).toList();
+
+      DocumentReference tripRef =
+          await FirebaseFirestore.instance.collection('Trips').add({
+        'Name': 'Trip Number $currentTripNumber',
+        'TripNumber': currentTripNumber,
+        'Date': formattedDate,
+        'Time': formattedTime,
+        'Streets': selectedStreets,
+      });
+
+      await tripRef.update({'TripID': tripRef.id});
+
+      setState(() {
+        currentTripNumber++;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Trip successfully added")),
+      );
+    } catch (e) {
+      print("Error adding trip: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error adding trip")),
+      );
+    }
   }
 
   @override
@@ -64,13 +141,12 @@ class _ReportPageScreenState extends State<ReportPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
-        // Allows vertical scrolling
         child: Padding(
           padding: const EdgeInsets.only(top: 45, left: 10, right: 10),
           child: Column(
             children: [
               Container(
-                padding: EdgeInsets.only(left: 5, right: 5),
+                padding: EdgeInsets.symmetric(horizontal: 5),
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.blue, width: 2),
                   borderRadius: BorderRadius.circular(10),
@@ -78,9 +154,7 @@ class _ReportPageScreenState extends State<ReportPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    SizedBox(
-                      height: 7,
-                    ),
+                    SizedBox(height: 7),
                     TextField(
                       controller: _searchController,
                       decoration: InputDecoration(
@@ -94,9 +168,7 @@ class _ReportPageScreenState extends State<ReportPage> {
                         ),
                       ),
                     ),
-                    SizedBox(
-                      height: 10,
-                    ),
+                    SizedBox(height: 10),
                     Row(
                       children: [
                         Expanded(
@@ -104,7 +176,6 @@ class _ReportPageScreenState extends State<ReportPage> {
                             controller: _startDateController,
                             decoration: InputDecoration(
                               hintText: 'dd/mm/yyyy',
-                              //labelText: 'From Date',
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8.0),
                               ),
@@ -114,14 +185,11 @@ class _ReportPageScreenState extends State<ReportPage> {
                           ),
                         ),
                         SizedBox(width: 8),
-                        Text(
-                          ' To  ',
-                        ), // Added space between fields
+                        Text('To '),
                         Expanded(
                           child: TextField(
                             controller: _endDateController,
                             decoration: InputDecoration(
-                              //  labelText: 'To Date',
                               hintText: 'dd/mm/yyyy',
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8.0),
@@ -133,11 +201,11 @@ class _ReportPageScreenState extends State<ReportPage> {
                         ),
                       ],
                     ),
-                    SizedBox(
-                      height: 5,
-                    ),
+                    SizedBox(height: 5),
                     ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        // Implement search functionality here
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue[400],
                       ),
@@ -149,27 +217,57 @@ class _ReportPageScreenState extends State<ReportPage> {
                   ],
                 ),
               ),
-              Foldar(
-                TripNo: 'Trip No.1',
-                onPressed: () {
-                  Navigator.of(context).pushNamed('Listofreports');
-                },
-              ),
-              Foldar(
-                TripNo: 'Trip No.2',
-                onPressed: () {
-                  Navigator.of(context).pushNamed('Listofreports');
-                },
-              ),
-              Foldar(
-                TripNo: 'Trip No.3',
-                onPressed: () {
-                  Navigator.of(context).pushNamed('Listofreports');
+              SizedBox(height: 20),
+              StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('Trips')
+                    .orderBy('TripNumber')
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  }
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return Text("No trips found");
+                  }
+
+                  final trips = snapshot.data!.docs;
+                  return ListView.builder(
+                    itemCount: trips.length,
+                    shrinkWrap: true,
+                    physics: NeverScrollableScrollPhysics(),
+                    itemBuilder: (context, index) {
+                      final trip = trips[index];
+                      return Card(
+                        margin: EdgeInsets.symmetric(vertical: 8),
+                        child: ListTile(
+                          leading:
+                              Icon(Icons.folder, size: 46, color: Colors.blue),
+                          title: Text(trip['Name']),
+                          subtitle: Text(
+                            " Date: ${trip['Date']} \nTime: ${trip['Time']}",
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                          onTap: () {
+                            Navigator.of(context).pushNamed('Listofreports');
+                          },
+                        ),
+                      );
+                    },
+                  );
                 },
               ),
             ],
           ),
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _addSingleTripToFirestore,
+        backgroundColor: Colors.blue,
+        child: Icon(Icons.add, color: Colors.white),
       ),
     );
   }

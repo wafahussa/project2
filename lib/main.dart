@@ -10,7 +10,7 @@ import 'package:flutter_application_2/Start.dart';
 import 'package:flutter_application_2/listofreports.dart';
 import 'package:flutter_application_2/login.dart';
 import 'package:firebase_core/firebase_core.dart';
-//import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,7 +29,7 @@ class myApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       // ignore: prefer_collection_literals
-      home: SplashScreen(),
+      home: BottomNavBar(),
       routes: {
         'SplashScreen': (context) => SplashScreen(),
         'Start': (context) => Start(),
